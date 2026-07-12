@@ -1,1 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>新标签页 · V1.6 Gecko Pro</title>
+    <!-- 引入样式表 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
 
+    <!-- 壁纸 & 遮罩 -->
+    <div class="wallpaper-layer" id="wallpaperLayer"></div>
+    <div class="overlay-layer" id="overlayLayer"></div>
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- 天气 -->
+    <div class="weather-widget" id="weatherWidget" title="单击刷新 · 双击切换城市">
+        <span class="weather-icon" id="weatherIcon">☀️</span>
+        <div class="weather-info">
+            <span class="weather-temp" id="weatherTemp">--°C</span>
+            <span class="weather-desc" id="weatherDesc">定位中…</span>
+            <span class="weather-city" id="weatherCity">📍 获取位置</span>
+            <span class="weather-tip">双击切换城市</span>
+        </div>
+    </div>
+
+    <!-- ===== 首页组件区域 ===== -->
+    <div class="home-widgets" id="homeWidgets">
+        <!-- 左侧 -->
+        <div class="left-widgets">
+            <!-- 便签 -->
+            <div id="homeNotesContainer" class="home-notes-container"></div>
+            <!-- 每日目标 -->
+            <div class="daily-goal-container" id="dailyGoalContainer" style="display:none;">
+                <div class="dg-title">🎯 今日目标</div>
+                <div class="dg-progress">
+                    <span id="dgCurrent">0</span>
+                    <span class="dg-bar"><span class="dg-fill" id="dgFill"></span></span>
+                    <span id="dgTotal">0</span>
+                </div>
+                <div class="dg-text" id="dgStatus">设定目标</div>
+            </div>
+        </div>
+        <!-- 右侧 -->
+        <div class="right-widgets">
+            <!-- 日历 -->
+            <div class="home-calendar" id="homeCalendar">
+                <div class="cal-header">
+                    <span id="calMonthYear"></span>
+                    <div>
+                        <button id="calPrev">◀</button>
+                        <button id="calNext">▶</button>
+                    </div>
+                </div>
+                <table>
+                    <thead><tr><th>日</th><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th></tr></thead>
+                    <tbody id="calBody"></tbody>
+                </table>
+            </div>
+            <!-- 首页待办 -->
+            <div class="home-todo-container" id="homeTodoContainer" style="display:none;">
+                <div class="ht-title"><span>📋 待办</span><span id="htCount">0</span></div>
+                <div id="homeTodoList"></div>
+            </div>
+            <!-- 倒计时小部件 -->
+            <div class="home-countdown" id="homeCountdown" style="display:none;">
+                <div class="hcd-time" id="hcdTime">00:00</div>
+                <div class="hcd-label">倒计时</div>
+            </div>
+            <!-- 系统信息 -->
+            <div class="sys-info" id="sysInfo" style="display:none;">
+                <span id="sysMem">💾 --</span>
+                <span id="sysUptime">⏱ --</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="main-container" id="mainContainer">
+        <!-- 时钟 -->
+        <div class="clock-wrapper" id="clockWrapper">
+            <div class="clock-time" id="clockTime">
+                <span id="timeMain">00:00</span><span class="clock-seconds" id="timeSeconds">:00</span>
+            </div>
+            <div class="clock-date" id="clockDate">加载中…</div>
+            <div class="pomodoro-indicator" id="pomodoroIndicator" style="display:none;">🍅 25:00</div>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="search-wrapper" id="searchWrapper">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索… Enter跳转" autocomplete="off" inputmode="none" />
+                <select class="search-engine-select" id="searchEngineSelect">
+                    <option value="google">🔍 Google</option><option value="baidu">🅱 百度</option>
+                    <option value="bing">🔎 Bing</option><option value="duckduckgo">🦆 DuckDuckGo</option>
+                    <option value="github">🐙 GitHub</option><option value="bilibili">📺 B站</option>
+                </select>
+                <button class="keyboard-toggle" id="keyboardToggle" title="软键盘">⌨️</button>
+            </div>
+            <!-- 搜索建议 -->
+            <div class="search-suggestions" id="searchSuggestions"></div>
+        </div>
+
+        <!-- 书签 -->
+        <div class="bookmarks-container" id="bookmarksContainer"></div>
+    </div>
+
+    <!-- 名言 -->
+    <div class="quote-container" id="quoteContainer" title="点击切换">
+        <div class="quote-text" id="quoteText"></div>
+        <div class="quote-author" id="quoteAuthor"></div>
+    </div>
+
+    <!-- 版权 -->
+    <div class="footer-copyright">
+        &copy; <span id="currentYear"></span> <a href="#" target="_blank">Zhang Yuxuan</a>. All rights reserved.
+    </div>
+
+    <!-- 浮动按钮 -->
+    <div class="floating-buttons">
+        <button class="float-btn" id="btnTodo" title="待办">📋<span class="badge" id="todoBadge" style="display:none;">0</span></button>
+        <button class="float-btn" id="btnTools" title="工具箱">🧰</button>
+        <button class="float-btn" id="btnPomodoro" title="番茄钟">🍅</button>
+        <button class="float-btn" id="btnSettings" title="设置">⚙️</button>
+    </div>
+
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 设置面板 -->
+    <div class="sidebar-panel" id="settingsPanel">
+        <div class="sidebar-header"><h3>⚙️ 设置</h3><button class="sidebar-close" id="btnSettingsClose">✕</button></div>
+        <div class="sidebar-content">
+            <div class="setting-group">
+                <label>🖼️ 壁纸</label>
+                <div class="setting-row" style="flex-wrap:wrap;gap:3px;">
+                    <button class="btn btn-sm wallpaper-src-btn" data-src="preset">预设</button>
+                    <button class="btn btn-sm wallpaper-src-btn" data-src="gradient">渐变</button>
+                    <button class="btn btn-sm wallpaper-src-btn" data-src="solid">纯色</button>
+                    <button class="btn btn-sm wallpaper-src-btn" data-src="upload">上传</button>
+                    <button class="btn btn-sm" id="btnUploadWallpaper">📁 选择</button>
+                    <input type="file" id="wallpaperFileInput" accept="image/*" style="display:none;" />
+                </div>
+            </div>
+            <div class="setting-group" id="presetImagesGroup" style="display:none;"><label>预设图片</label><div class="preset-grid" id="presetImagesGrid"></div></div>
+            <div class="setting-group" id="gradientPresetsGroup" style="display:none;"><label>渐变</label><div class="preset-grid" id="gradientPresets"></div></div>
+            <div class="setting-group" id="solidColorGroup" style="display:none;"><label>纯色</label><input type="color" id="solidColorPicker" value="#1a1a2e" /></div>
+
+            <div class="setting-group"><label>遮罩透明度</label><input type="range" id="overlayOpacitySlider" min="0" max="100" value="28" /></div>
+            <div class="setting-group"><label>模糊</label><input type="range" id="blurSlider" min="0" max="30" value="0" /></div>
+            <div class="setting-group"><label>亮度</label><input type="range" id="brightnessSlider" min="30" max="150" value="100" /></div>
+            <div class="setting-group"><label>遮罩颜色</label><input type="color" id="overlayColorPicker" value="#000000" /></div>
+
+            <div class="setting-group">
+                <label>🕐 时钟</label>
+                <div class="setting-row"><span>24小时制</span><input type="checkbox" id="clock24h" /></div>
+                <div class="setting-row"><span>显示秒数</span><input type="checkbox" id="clockShowSeconds" checked /></div>
+            </div>
+
+            <div class="setting-group">
+                <label>👁️ 显示</label>
+                <div class="setting-row"><span>搜索栏</span><input type="checkbox" id="searchShow" checked /></div>
+                <div class="setting-row"><span>天气</span><input type="checkbox" id="weatherShow" checked /></div>
+                <div class="setting-row"><span>名言</span><input type="checkbox" id="quoteShow" checked /></div>
+                <div class="setting-row"><span>粒子</span><input type="checkbox" id="particlesShow" checked /></div>
+                <div class="setting-row"><span>软键盘</span><input type="checkbox" id="keyboardShow" checked /></div>
+                <div class="setting-row"><span>首页便签</span><input type="checkbox" id="homeNotesShow" checked /></div>
+                <div class="setting-row"><span>首页待办</span><input type="checkbox" id="homeTodoShow" /></div>
+                <div class="setting-row"><span>首页日历</span><input type="checkbox" id="homeCalendarShow" /></div>
+                <div class="setting-row"><span>每日目标</span><input type="checkbox" id="dailyGoalShow" /></div>
+                <div class="setting-row"><span>系统信息</span><input type="checkbox" id="sysInfoShow" /></div>
+                <div class="setting-row"><span>首页倒计时</span><input type="checkbox" id="homeCountdownShow" /></div>
+                <div class="setting-row"><span>搜索建议</span><input type="checkbox" id="searchSuggestShow" checked /></div>
+            </div>
+
+            <div class="setting-group">
+                <label>🎯 每日目标</label>
+                <div class="setting-row">
+                    <input type="number" id="dailyGoalInput" placeholder="今日目标数" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 12px;color:#fff;font-size:0.78rem;outline:none;width:80px;" />
+                    <button class="btn btn-sm accent" id="btnSetDailyGoal">设定</button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>🔄 自动换壁纸 (分钟, 0=关闭)</label>
+                <input type="range" id="autoChangeInterval" min="0" max="120" value="0" step="5" />
+                <span style="font-size:0.65rem;opacity:0.35;" id="autoChangeLabel">关闭</span>
+            </div>
+
+            <div class="setting-group">
+                <label>📊 统计</label>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="num" id="statTodo">0</div><div class="label">待办</div></div>
+                    <div class="stat-card"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
+                    <div class="stat-card"><div class="num" id="statBookmark">0</div><div class="label">书签</div></div>
+                    <div class="stat-card"><div class="num" id="statPomo">0</div><div class="label">🍅 完成</div></div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>💾 数据</label>
+                <div class="setting-row" style="flex-wrap:wrap;gap:4px;">
+                    <button class="btn btn-sm" id="btnExportData">导出</button>
+                    <button class="btn btn-sm" id="btnImportData">导入</button>
+                    <button class="btn btn-sm danger" id="btnResetAll">重置</button>
+                </div>
+                <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+            </div>
+        </div>
+    </div>
+
+    <!-- 待办面板 -->
+    <div class="sidebar-panel" id="todoPanel">
+        <div class="sidebar-header"><h3>📋 待办</h3><button class="sidebar-close" id="btnTodoClose">✕</button></div>
+        <div class="sidebar-content">
+            <div class="todo-input-row">
+                <input type="text" id="todoInput" placeholder="新待办…" />
+                <select id="todoPrioritySelect"><option value="low">🟢 低</option><option value="medium" selected>🟡 中</option><option value="high">🔴 高</option></select>
+                <button class="btn accent btn-sm" id="btnTodoAdd">添加</button>
+            </div>
+            <div class="todo-list" id="todoList"></div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">
+                <button class="btn btn-sm" id="btnFilterAll">全部</button>
+                <button class="btn btn-sm" id="btnFilterActive">未完成</button>
+                <button class="btn btn-sm" id="btnFilterDone">已完成</button>
+                <button class="btn btn-sm danger" id="btnClearCompleted">清除已完成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工具箱面板 -->
+    <div class="sidebar-panel" id="toolsPanel">
+        <div class="sidebar-header"><h3>🧰 工具箱</h3><button class="sidebar-close" id="btnToolsClose">✕</button></div>
+        <div class="sidebar-content">
+            <div class="mini-tools-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;">
+                <div class="mini-tool-card" style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:12px 14px;border:1px solid rgba(255,255,255,0.04);">
+                    <h4 style="font-weight:450;font-size:0.7rem;opacity:0.5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">📝 便签</h4>
+                    <textarea id="noteInput" placeholder="写点什么…" rows="2" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 12px;color:#fff;font-size:0.78rem;outline:none;transition:all var(--transition);font-family:inherit;resize:vertical;min-height:32px;"></textarea>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+                        <button class="btn btn-sm accent" id="btnAddNote">添加</button>
+                        <button class="btn btn-sm" id="btnClearNotes">清空</button>
+                    </div>
+                    <div class="note-list" id="noteList" style="display:flex;flex-direction:column;gap:2px;margin-top:4px;max-height:80px;overflow-y:auto;"></div>
+                </div>
+                <div class="mini-tool-card" style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:12px 14px;border:1px solid rgba(255,255,255,0.04);">
+                    <h4 style="font-weight:450;font-size:0.7rem;opacity:0.5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">🔢 计算器</h4>
+                    <input type="text" id="calcInput" placeholder="如: 12*3+4" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 12px;color:#fff;font-size:0.78rem;outline:none;transition:all var(--transition);font-family:inherit;" />
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+                        <button class="btn btn-sm accent" id="btnCalc">=</button>
+                        <button class="btn btn-sm" id="btnCalcClear">C</button>
+                    </div>
+                    <div class="result" id="calcResult" style="font-size:0.85rem;opacity:0.7;margin-top:4px;word-break:break-all;min-height:1.4em;">=</div>
+                </div>
+                <div class="mini-tool-card" style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:12px 14px;border:1px solid rgba(255,255,255,0.04);">
+                    <h4 style="font-weight:450;font-size:0.7rem;opacity:0.5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">📐 单位换算</h4>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+                        <input type="number" id="convertValue" placeholder="数值" style="flex:1;min-width:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 12px;color:#fff;font-size:0.78rem;outline:none;transition:all var(--transition);font-family:inherit;" />
+                        <select id="convertFrom" style="flex:1;min-width:50px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 10px;color:#fff;font-size:0.76rem;outline:none;cursor:pointer;">
+                            <option value="cm">cm</option><option value="m">m</option>
+                            <option value="km">km</option><option value="in">in</option>
+                            <option value="ft">ft</option><option value="yd">yd</option>
+                            <option value="mi">mi</option>
+                        </select>
+                        <span style="opacity:0.3;">→</span>
+                        <select id="convertTo" style="flex:1;min-width:50px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 10px;color:#fff;font-size:0.76rem;outline:none;cursor:pointer;">
+                            <option value="cm">cm</option><option value="m" selected>m</option>
+                            <option value="km">km</option><option value="in">in</option>
+                            <option value="ft">ft</option><option value="yd">yd</option>
+                            <option value="mi">mi</option>
+                        </select>
+                    </div>
+                    <div class="result" id="convertResult" style="font-size:0.85rem;opacity:0.7;margin-top:4px;word-break:break-all;min-height:1.4em;">=</div>
+                </div>
+                <div class="mini-tool-card" style="background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);padding:12px 14px;border:1px solid rgba(255,255,255,0.04);">
+                    <h4 style="font-weight:450;font-size:0.7rem;opacity:0.5;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">⏱️ 倒计时</h4>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+                        <input type="number" id="countdownMinutes" placeholder="分钟" style="flex:1;min-width:50px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:30px;padding:6px 12px;color:#fff;font-size:0.78rem;outline:none;transition:all var(--transition);font-family:inherit;" value="5" />
+                        <button class="btn btn-sm accent" id="btnCountdownStart">▶</button>
+                        <button class="btn btn-sm" id="btnCountdownReset">⏹</button>
+                    </div>
+                    <div class="countdown-display" id="countdownDisplay" style="font-size:1.2rem;font-weight:500;letter-spacing:0.06em;text-align:center;opacity:0.8;">00:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" data-action="edit">✏️ 编辑书签</div>
+        <div class="context-menu-item danger" data-action="delete">🗑️ 删除书签</div>
+    </div>
+
+    <!-- ===== 软键盘面板 ===== -->
+    <div class="keyboard-panel" id="keyboardPanel">
+        <div id="keyboardRows"></div>
+    </div>
+
+    <!-- 引入 JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>
